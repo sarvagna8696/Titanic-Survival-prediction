@@ -1,0 +1,90 @@
+import pandas as pd
+
+train_data = pd.read_csv('train.csv')
+test_data = pd.read_csv('test.csv')
+
+train_data.head()
+
+
+
+
+train_data.isnull().sum()
+
+
+train_data.describe()
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+plt.figure(figsize=(10, 6))
+
+
+sns.countplot(x='Survived', data=train_data)
+plt.title('Survival Count')
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(train_data['Age'].dropna(), kde=True)
+plt.title('Age Distribution')
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Pclass', hue='Survived', data=train_data)
+plt.title('Survival Count by Class')
+plt.show()
+
+
+plt.figure(figsize=(10, 6))
+sns.countplot(x='Sex', hue='Survived', data=train_data)
+plt.title('Survival Count by Gender')
+plt.show()
+
+train_data['Age'].fillna(train_data['Age'].median(), inplace=True)
+test_data['Age'].fillna(test_data['Age'].median(), inplace=True)
+
+train_data['Embarked'].fillna(train_data['Embarked'].mode()[0], inplace=True)
+test_data['Embarked'].fillna(test_data['Embarked'].mode()[0], inplace=True)
+
+
+test_data['Fare'].fillna(test_data['Fare'].median(), inplace=True)
+
+
+train_data['Sex'] = train_data['Sex'].map({'male': 0, 'female': 1})
+test_data['Sex'] = test_data['Sex'].map({'male': 0, 'female': 1})
+
+train_data = pd.get_dummies(train_data, columns=['Embarked', 'Pclass'])
+test_data = pd.get_dummies(test_data, columns=['Embarked', 'Pclass'])
+from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+features = ['Sex', 'Age', 'Fare', 'Embarked_C', 'Embarked_Q', 'Embarked_S', 'Pclass_1', 'Pclass_2', 'Pclass_3']
+X = train_data[features]
+y = train_data['Survived']
+
+
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_val)
+
+train_accuracy = model.score(X_train, y_train)
+val_accuracy = accuracy_score(y_val, y_pred)
+cv_scores = cross_val_score(model, X, y, cv=5)
+
+print(f'Train Accuracy: {train_accuracy:.2f}')
+print(f'Validation Accuracy: {val_accuracy:.2f}')
+print(f'Cross-Validation Scores: {cv_scores}')
+print(f'Cross-Validation Mean Score: {cv_scores.mean():.2f}')
+
+print(classification_report(y_val, y_pred))
+
+conf_mat = confusion_matrix(y_val, y_pred)
+sns.heatmap(conf_mat, annot=True, fmt='d', cmap='Blues')
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.show()
